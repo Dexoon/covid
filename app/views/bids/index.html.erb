@@ -1,0 +1,31 @@
+<p id="notice"><%= notice %></p>
+
+<h1>Bids</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Region</th>
+      <th>Contact info</th>
+      <th>Aasm state</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @bids.each do |bid| %>
+      <tr>
+        <td><%= bid.region_id %></td>
+        <td><%= bid.contact_info %></td>
+        <td><%= bid.aasm_state %></td>
+        <td><%= link_to 'Show', bid %></td>
+        <td><%= link_to 'Edit', edit_bid_path(bid) %></td>
+        <td><%= link_to 'Destroy', bid, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Bid', new_bid_path %>

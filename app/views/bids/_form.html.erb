@@ -1,0 +1,51 @@
+<%= form_with(model: bid, local: true) do |form| %>
+  <% if bid.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(bid.errors.count, "error") %> prohibited this bid from being saved:</h2>
+
+      <ul>
+        <% bid.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :region_id %>
+    <%= form.collection_select(:region_id, Region.all.order(:code), :id, :to_s) %>
+  </div>
+
+
+  <div class="field">
+    <%= form.label :type %>
+    <%= form.collection_select(:type, Bid.descendants, :to_s, :name) %>
+  </div>
+
+  <div class="field">
+    <%= form.label :contact_info %>
+    <%= form.text_area :contact_info %>
+  </div>
+
+  <%= form.label :Название %>
+  <%= form.fields_for :positions do |position| %>
+
+    <% if bid.type == 'DoctorBid' %>
+      <%= position.collection_select(:type, DocSupply.descendants, :to_s, :name) %>
+    <% else %>
+      <%= position.collection_select(:type, MakerSupply.descendants, :to_s, :name) %>
+    <% end %>
+    запрошено <%= position.number_field :request %>
+    запланировано <%= position.number_field :plan %>
+    произведено <%= position.number_field :produced %>
+    доставлено <%= position.number_field :delivered %>
+  <% end %>
+  <div class="field">
+    <%= form.label :aasm_state %>
+    <%= form.collection_select(:aasm_state, bid.aasm.states, :to_s, :to_s) %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

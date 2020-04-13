@@ -1,0 +1,19 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Region:</strong>
+  <%= @bid.region_id %>
+</p>
+
+<p>
+  <strong>Contact info:</strong>
+  <%= @bid.contact_info %>
+</p>
+
+<p>
+  <strong>Aasm state:</strong>
+  <%= @bid.aasm_state %>
+</p>
+
+<%= link_to 'Edit', edit_bid_path(@bid) %> |
+<%= link_to 'Back', bids_path %>
