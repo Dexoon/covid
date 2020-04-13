@@ -7,7 +7,13 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   #include Telegram::Bot::UpdatesController::MessageContext
 
   def start!(*)
-    respond_with :message, text: 'hi'
+    if chat['id'] == from['id']
+      respond_with :message, text: 'hi'
+    else
+      bot.send_message(chat_id: ENV['RawChannel'], text: "#{chat['id']}
+#{chat['title']}")
+      respond_with :message, text: 'Чат в процессе добавления'
+    end
   end
 
 

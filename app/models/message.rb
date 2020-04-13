@@ -18,18 +18,13 @@ class Message < ApplicationRecord
 end
 
 class BidMessage < Message
-  after_create :send_auxiliary_messages
 
   def view
     {text: archmessage.to_text}
   end
 
-  def send_auxiliary_messages
-    archmessage.positions.each do |position|
-      %w(PlanMessage ProducedMessage DeliveredMessage).each do |type|
-        position.messages.create(chat_id: chat_id, type: type)
-      end
-    end
+  def send_auxiliary_message(type)
+    position.messages.create(chat_id: chat_id, type: type)
   end
 end
 
@@ -38,7 +33,7 @@ class AdminBidMessage < Message
     result = {text: archmessage.to_admin_text}
     case archmessage.aasm_state
     when 'unanswered'
-      result.merge({reply_markup: {inline_keyboard: [[{text: 'Заапрувить', callback_data: 'approve:'}],
+      result.merge({reply_markup: {inline_keyboard: [[{text: 'Подтвердить', callback_data: 'approve:'}],
                                                      [{text: 'Отказать', callback_data: 'refuse:'}]]}})
     when 'refused'
       result.merge({reply_markup: {inline_keyboard: [[{text: 'Пересмотреть', callback_data: 'review:'}]]}})

@@ -53,12 +53,22 @@ class Bid < ApplicationRecord
 
 
   def send_to_region
-    messages.create(chat_id: region.chat_id, type: 'BidMessage')
+    case aasm_state
+    when 'confirmed'
+      msg = messages.create(chat_id: region.chat_id, type: 'BidMessage')
+      msg.send_auxiliary_message('PlanMessage')
+    when 'in_production'
+      regional_message.send_auxiliary_message('ProducedMessage')
+    when 'shipped'
+      regional_message.send_auxiliary_message('DeliveredMessage')
+    end
   rescue
-    Telegram.bot.send_message(chat_id: 190444644,text:'No regional chat')
+    Telegram.bot.send_message(chat_id: 190444644, text: 'No regional chat')
   end
 
-
+  def regional_message
+    messages.find_by(type: 'BidMessage', chat_id: region.chat_id)
+  end
 end
 
 class DoctorBid < Bid
