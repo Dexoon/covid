@@ -11,6 +11,9 @@ class ApplicationController < ActionController::Base
       name = data['Как вас зовут (ФИО)']
       phone = data['Мобильный телефон для связи с вами (+7XXXXXXXX)']
       region = data['Область']
+      code = region[0..1].to_i
+      code = 77 if code == 50
+      code = 78 if code == 47
       town = data['Город']
       hospital = data['Номер и адрес больницы']
       doctor = data['Врач больницы (контактное лицо)']
@@ -24,7 +27,7 @@ class ApplicationController < ActionController::Base
 Город: #{town}
 Номер и адрес больницы: #{hospital}
 Врач: #{doctor}\n"
-      region = Region.find_by(code: region[0..1].to_i)
+      region = Region.find_by(code: code)
       bid = Bid.create(region: region, contact_info: contact_info, type: "DoctorBid")
       bid.positions.create(type: 'Shield', request: shiled) unless shiled == 0
       bid.positions.create(type: 'Hairpin', request: hairpin) unless hairpin == 0

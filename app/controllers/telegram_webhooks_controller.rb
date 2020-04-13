@@ -44,6 +44,10 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
 
   end
 
+  def supply
+    region=Region.find_by(chat_id:chat['id'])
+  end
+
   def approve_callback_query(data)
     @message.archmessage.confirm!
     answer_callback_query(t('.confirm'), show_alert: true)
