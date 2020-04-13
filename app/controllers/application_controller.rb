@@ -12,10 +12,10 @@ class ApplicationController < ActionController::Base
       phone = data['Мобильный телефон для связи с вами (+7XXXXXXXX)']
       region = data['Область']
       town = data['Город']
-      hospital = data['Номер и адрес больницы ']
+      hospital = data['Номер и адрес больницы']
       doctor = data['Врач больницы (контактное лицо)']
       shiled = data['Защитные щитки (шт.)'].to_i
-      hairpin = data['Заколки для масок (шт.)'].to_i
+      hairpin = data['Заколки для марлевых масок (шт.)'].to_i
       box = data['Защитные боксы (шт.), в том числе боксы для бронхоскопии'].to_i
       maskadapter = data['Переходники для снорклинг-масок (шт.)'].to_i
       contact_info = "Организация: #{organization}
@@ -23,7 +23,7 @@ class ApplicationController < ActionController::Base
 Телефон: #{phone}
 Город: #{town}
 Номер и адрес больницы: #{hospital}
-Врач: #{doctor}"
+Врач: #{doctor}\n"
       region = Region.find_by(code: region[0..1].to_i)
       bid = Bid.create(region: region, contact_info: contact_info, type: "DoctorBid")
       bid.positions.create(type: 'Shield', request: shiled) unless shiled == 0
