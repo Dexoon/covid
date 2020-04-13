@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
   def webhook
     begin
       data = JSON.parse(request.body.read)['response']['payload']
+      Telegram.bot.send_message(chat_id: 190444644, text: data.to_s)
       #method = "handle_" + event['type'].tr('.', '_')
       #self.send method, event
       organization = data['Название вашей организации']
