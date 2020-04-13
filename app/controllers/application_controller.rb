@@ -6,7 +6,29 @@ class ApplicationController < ActionController::Base
       data = JSON.parse(request.body.read)['response']['payload']
       #method = "handle_" + event['type'].tr('.', '_')
       #self.send method, event
-      phone = data['Номер телефона для звонков (в формате +79ХХ1234567)']
+      organization = data['Название вашей организации']
+      name = data['Как вас зовут (ФИО)']
+      phone = data['Мобильный телефон для связи с вами (+7XXXXXXXX)']
+      region = data['Область']
+      town = data['Город']
+      hospital = data['Номер и адрес больницы ']
+      doctor = data['Врач больницы (контактное лицо)']
+      shiled = data['Защитные щитки (шт.)'].to_i
+      hairpin = data['Заколки для масок (шт.)'].to_i
+      box = data['Защитные боксы (шт.), в том числе боксы для бронхоскопии'].to_i
+      maskadapter = data['Переходники для снорклинг-масок (шт.)'].to_i
+      contact_info = "Организация: #{organization}
+Имя: #{name}
+Телефон: #{phone}
+Город: #{town}
+Номер и адрес больницы: #{hospital}
+Врач: #{doctor}"
+      region = Region.find_by(code: region[0..1].to_i)
+      bid = Bid.create(region: region, contact_info: contact_info, type: "DoctorBid")
+      bid.positions.create(type: 'Shield', request: shiled) unless shiled == 0
+      bid.positions.create(type: 'Hairpin', request: hairpin) unless hairpin == 0
+      bid.positions.create(type: 'Box', request: box) unless box == 0
+      bid.positions.create(type: 'MaskAdapter', request: maskadapter) unless maskadapter == 0
     rescue JSON::ParserError => e
       render json: {:status => 400, :error => "Invalid payload"} and return
     rescue NoMethodError => e
