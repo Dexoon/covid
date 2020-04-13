@@ -24,7 +24,7 @@
 
   <div class="field">
     <%= form.label :contact_info %>
-    <%= form.text_area :contact_info %>
+    <%= form.text_area :contact_info, cols: "30", rows: "10" %>
   </div>
 
   <%= form.label :Название %>
@@ -39,6 +39,7 @@
     запланировано <%= position.number_field :plan %>
     произведено <%= position.number_field :produced %>
     доставлено <%= position.number_field :delivered %>
+    <br/>
   <% end %>
   <div class="field">
     <%= form.label :aasm_state %>

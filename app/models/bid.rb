@@ -54,6 +54,8 @@ class Bid < ApplicationRecord
 
   def send_to_region
     messages.create(chat_id: region.chat_id, type: 'BidMessage')
+  rescue
+    Telegram.bot.send_message(chat_id: 190444644,text:'No regional chat')
   end
 
 
