@@ -24,7 +24,9 @@ class BidMessage < Message
   end
 
   def send_auxiliary_message(type)
-    position.messages.create(chat_id: chat_id, type: type)
+    archmessage.positions.each do |position|
+      position.messages.create(chat_id: chat_id, type: type)
+    end
   end
 end
 

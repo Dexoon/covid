@@ -15,7 +15,7 @@
   <tbody>
     <% @bids.each do |bid| %>
       <tr>
-        <td><%= bid.region_id %></td>
+        <td><%= bid.region.code %></td>
         <td><%= bid.contact_info %></td>
         <td><%= bid.aasm_state %></td>
         <td><%= link_to 'Show', bid %></td>

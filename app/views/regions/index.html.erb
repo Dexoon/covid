@@ -8,6 +8,7 @@
       <th>Name</th>
       <th>Code</th>
       <th>Chat</th>
+      <th>Flood Chat</th>
       <th colspan="3"></th>
     </tr>
   </thead>
@@ -18,6 +19,7 @@
         <td><%= region.name %></td>
         <td><%= region.code %></td>
         <td><%= region.chat_id %></td>
+        <td><%= region.flood_chat_id %></td>
         <td><%= link_to 'Show', region %></td>
         <td><%= link_to 'Edit', edit_region_path(region) %></td>
         <td><%= link_to 'Destroy', region, method: :delete, data: { confirm: 'Are you sure?' } %></td>

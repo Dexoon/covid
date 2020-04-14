@@ -11,7 +11,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
       respond_with :message, text: 'hi'
     else
       bot.send_message(chat_id: ENV['RawChannel'], text: "#{chat['id']}
-#{chat['title']}")
+      #{chat['title']}")
       respond_with :message, text: 'Чат в процессе добавления'
     end
   end
@@ -45,14 +45,28 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   end
 
   def supply
-    region=Region.find_by(chat_id:chat['id'])
+    region = Region.where(chat_id: chat['id']).order(code: :desc)[0]
+    return respond_with :message, text: 'Кажется, этот чат не добавлен' if region.nil?
+
+    respond_with :message, {text: 'Выберите, какого материала вам не хватает',
+                            reply_markup: {
+                                inline_keyboard:
+                                    Kernel.const_get("MakerSupply").descendants.map { |d| [{text: d.name, callback_query: "supply:#{d}"}] }
+                            }}
   end
+
+  def supply_callback_query(data)
+    region = Region.where(chat_id: chat['id']).order(code: :desc)[0]
+    bid = Bid.create(type: "MakerBid", region: region)
+    bid.positions.create(type: data)
+    answer_callback_query('')
+  end
+
 
   def approve_callback_query(data)
     @message.archmessage.confirm!
     answer_callback_query(t('.confirm'), show_alert: true)
   end
-
 
   def next_callback_query(data)
     @message.archmessage.next!

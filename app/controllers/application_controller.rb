@@ -21,13 +21,13 @@ class ApplicationController < ActionController::Base
       hairpin = data['Заколки для марлевых масок (шт.)'].to_i
       box = data['Защитные боксы (шт.), в том числе боксы для бронхоскопии'].to_i
       maskadapter = data['Переходники для снорклинг-масок (шт.)'].to_i
+      region = Region.find_by(code: code)
       contact_info = "Организация: #{organization}
 Имя: #{name}
 Телефон: #{phone}
 Город: #{town}
 Номер и адрес больницы: #{hospital}
-Врач: #{doctor}\n"
-      region = Region.find_by(code: code)
+Врач: #{doctor}\n\n"
       bid = Bid.create(region: region, contact_info: contact_info, type: "DoctorBid")
       bid.positions.create(type: 'Shield', request: shiled) unless shiled == 0
       bid.positions.create(type: 'Hairpin', request: hairpin) unless hairpin == 0

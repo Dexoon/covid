@@ -18,7 +18,7 @@ class DocSupply < Position
 
 end
 class MakerSupply < Position
-
+  after_create :send_auxiliary_message
 end
 
 class Shield < DocSupply
