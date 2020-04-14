@@ -4,7 +4,7 @@ class RegionsController < ApplicationController
   # GET /regions
   # GET /regions.json
   def index
-    @regions = Region.all
+    @regions = Region.all.order(:code)
   end
 
   # GET /regions/1
@@ -69,6 +69,6 @@ class RegionsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def region_params
-      params.require(:region).permit(:name, :code, :chat_id)
+      params.require(:region).permit(:name, :code, :chat_id, :flood_chat_id)
     end
 end
