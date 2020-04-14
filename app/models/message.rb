@@ -2,10 +2,10 @@ class Message < ApplicationRecord
   belongs_to :archmessage, polymorphic: true
   after_create :send_message
 
-  def send_message
+  def send_message(params = {})
     return unless message_id.nil?
 
-    msg = Telegram.bot.send_message({chat_id: chat_id, parse_mode: 'HTML'}.merge(view))
+    msg = Telegram.bot.send_message({chat_id: chat_id, parse_mode: 'HTML'}.merge(view).merge(params))
     update(message_id: msg['result']['message_id'])
   end
 
@@ -49,6 +49,10 @@ end
 
 class AuxiliaryMessage < Message
   def refresh
+  end
+
+  def send_message
+    super(reply_to_message_id: archmessage.bid.regional_message&.message_id)
   end
 
   def view

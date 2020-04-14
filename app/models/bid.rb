@@ -79,7 +79,7 @@ class DoctorBid < Bid
     when 'in_production'
       regional_message&.send_auxiliary_message('ProducedMessage')
     when 'shipped'
-      regional_message&.send_auxiliary_message('DeliveredMessage')
+      No regional chatsend_auxiliary_message('DeliveredMessage')
     end
   rescue
     Telegram.bot.send_message(chat_id: 190444644, text: 'No regional chat')
