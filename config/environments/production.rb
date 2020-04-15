@@ -3,7 +3,7 @@ Rails.application.configure do
   routes.default_url_options = {host: ENV["Server"], protocol: 'https'}
   # Code is not reloaded between requests.
   config.cache_classes = true
-
+  config.telegram_updates_controller.session_store = :redis_store, {expires_in: 1.month}
   # Eager load code on boot. This eager loads most of Rails and
   # your application in memory, allowing both threaded web servers
   # and those relying on copy on write to perform better.
