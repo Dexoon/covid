@@ -71,7 +71,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     if report.save
       session['report'] = report
       respond_with :message, text: "Выберите доставляемый продукт", reply_markup: {
-          keyboard: ['Лупа', 'Пупа', 'Залупа', 'За пупа'].map do |text|
+          keyboard: ['Щитки', 'Заколки', 'Боксы', 'Адаптеры'].map do |text|
             [{text: text}]
           end,
           one_time_keyboard: true
