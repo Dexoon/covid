@@ -32,7 +32,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     end
   end
 
-  def region(code = nil)
+  def region(code = nil,*args)
     if code.nil?
       respond_with :message, text: 'Введите код вашего региона'
       save_context :region
@@ -43,7 +43,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     end
   end
 
-  def amount(number)
+  def amount(number,*args)
     report = session['report']
     if report.nil?
       respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
@@ -71,7 +71,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
 
   end
 
-  def order(number)
+  def order(number,*args)
     report = Report.find_or_create_by(region: session['region'], order: number)
     if report.save
       session['report'] = report
@@ -91,7 +91,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
 
   end
 
-  def report
+  def report(*args)
     respond_with :message, {text: @fingerpint + I18n.t('telegram_webhooks.report.text'),
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :order
@@ -113,13 +113,13 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     send_error(msg)
   end
 
-  def thanks
+  def thanks(*args)
     respond_with :message, {text: @fingerpint + I18n.t('telegram_webhooks.thanks.text'),
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :doctor_photo
   end
 
-  def doctor_photo
+  def doctor_photo(*args)
     save_context :doctor_photo unless payload['photo'].nil? && payload['document'].nil?
     reply_with :message, {text: @fingerpint + "Врач согласился на использование видео в открытых источниках?",
                           reply_markup: {inline_keyboard:
@@ -138,7 +138,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     send_error(msg)
   end
 
-  def forward_to_channel(message, channel = 'Photo_channel', caption = '')
+  def forward_to_channel(message, channel = 'Photo_channel', caption = '',*args)
     report = session['report']
     if report.nil?
       forwarded = bot.forward_message(chat_id: 'Lost_channel',
