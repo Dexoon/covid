@@ -6,5 +6,9 @@ Rails.application.routes.draw do
 
   get '/webhook', to: 'application#webhook'
   post '/webhook', to: 'application#webhook'
+
+  require 'sidekiq/web'
+  mount Sidekiq::Web => '/sidekiq'
+
   telegram_webhook TelegramWebhooksController
 end
