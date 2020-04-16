@@ -1,7 +1,5 @@
 class UpdateSpreadsheetJob < ApplicationJob
   queue_as :default
-  after_update :update_sheet
-
   def perform(report, *args)
     return if report.nil?
 
@@ -13,10 +11,5 @@ class UpdateSpreadsheetJob < ApplicationJob
     Sheets.write("A#{line}:Z#{line}", [row])
   end
 
-  def update_sheet
-    if order && region
-      UpdateSpreadsheetJob.perform_later(self)
-    end
 
-  end
 end
