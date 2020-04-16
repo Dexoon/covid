@@ -6,11 +6,16 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   include Telegram::Bot::UpdatesController::Session
   before_action :set_globals, except: %i[channel_post edited_channel_post edited_message unsupported_payload_type]
 
+  def clean_start
+    session.delete(:context)
+    session.delete(:report)
+    start!
+  end
+
   def start!(*)
     if chat['id'] == from['id']
-      session.delete(:context)
       if session['region']
-        respond_with :message, text: 'Что вы хотите прислать?', reply_markup: {
+        respond_with :message, text: @fingerpint + 'Что вы хотите прислать?', reply_markup: {
             keyboard: %i(report thanks region).map do |x|
               [{text: I18n.t('telegram_webhooks.reply_buttons')[x]}]
             end,
@@ -41,26 +46,26 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   def amount(number)
     report = session['report']
     if report.nil?
-      respond_with :message, text: "Что-то пошло не так, попробуйте заново"
+      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
       start!
       return
     end
     report.product += [number]
     report.save!
-    respond_with :message, text: "Прикрепите фото (видео) готовой продукции"
+    respond_with :message, text: @fingerpint + "Прикрепите фото (видео) готовой продукции"
   end
 
   def product(*name)
     name = name.join(' ')
     report = session['report']
     if report.nil?
-      respond_with :message, text: "Что-то пошло не так, попробуйте заново"
+      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
       start!
       return
     end
     report.product += [name]
     report.save!
-    respond_with :message, {text: "Введите количество продукта",
+    respond_with :message, {text: @fingerpint + "Введите количество продукта",
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :amount
 
@@ -70,24 +75,24 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     report = Report.find_or_create_by(region: session['region'], order: number)
     if report.save
       session['report'] = report
-      respond_with :message, text: "Выберите доставляемый продукт", reply_markup: {
-          keyboard: ['Щитки', 'Заколки', 'Боксы', 'Адаптеры'].map do |text|
+      respond_with :message, text: @fingerpint + "Выберите доставляемый продукт", reply_markup: {
+          keyboard: ['Щитки', 'Заколки', 'Боксы', 'Переходники'].map do |text|
             [{text: text}]
           end,
           one_time_keyboard: true
       }
-      respond_with :message, {text: "В случае ошибки в номере заказа, нажмите 'Ошибка/отмена'",
+      respond_with :message, {text: @fingerpint + "В случае ошибки в номере заказа, нажмите 'Ошибка/отмена'",
                               reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
       save_context :product
     else
-      respond_with :message, text: "Что-то пошло не так, попробуйте заново"
+      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
       start!
     end
 
   end
 
   def report
-    respond_with :message, {text: I18n.t('telegram_webhooks.report.text'),
+    respond_with :message, {text: @fingerpint + I18n.t('telegram_webhooks.report.text'),
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :order
   end
@@ -109,13 +114,14 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   end
 
   def thanks
-    respond_with :message, {text: I18n.t('telegram_webhooks.thanks.text'),
+    respond_with :message, {text: @fingerpint + I18n.t('telegram_webhooks.thanks.text'),
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :doctor_photo
   end
 
   def doctor_photo
-    reply_with :message, {text: "Врач согласился на использование видео в открытых источниках?",
+    save_context :doctor_photo unless payload['photo'].nil? && payload['document'].nil?
+    reply_with :message, {text: @fingerpint + "Врач согласился на использование видео в открытых источниках?",
                           reply_markup: {inline_keyboard:
                                              I18n.t('telegram_webhooks.doctor_photo.buttons').map { |key, text|
                                                [{text: text, callback_data: "doctor:#{key}"}]
@@ -138,15 +144,15 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
       forwarded = bot.forward_message(chat_id: 'Lost_channel',
                                       from_chat_id: message['chat']['id'],
                                       message_id: message['message_id'])
-      respond_with :message, text: "Что-то пошло не так, попробуйте заново"
+      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
       start!
       return
     end
     if channel == 'Doctor_channel'
       save_context :doctor_photo
-      respond_with :message, text: 'Можете прислать ещё фото/видео, с благодарностью врача, необязательно нажимать на кнопки внизу'
+      respond_with :message, text: @fingerpint + 'Можете прислать ещё фото/видео, с благодарностью врача, необязательно нажимать на кнопки внизу'
     else
-      respond_with :message, text: 'Можете прислать ещё фото/видео, с отчётом, необязательно нажимать на кнопки внизу'
+      respond_with :message, text: @fingerpint + 'Можете прислать ещё фото/видео, с отчётом, необязательно нажимать на кнопки внизу'
     end
     start!
     bot.send_message(chat_id: ENV[channel], text: "#{report}\n#{caption}\n#{@user}", parse_mode: 'HTML')
@@ -185,10 +191,8 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   end
 
   def cancel_callback_query(data)
-    session.delete(:context)
-    session.delete(:report)
     answer_callback_query('')
-    start!
+    clean_start
   end
 
   def approve_callback_query(data)
@@ -246,6 +250,9 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   # Same user in other chat will have different session.
   def set_globals
     return unless from
+    @fingerpint = ''
+    @fingerpint += "#{session['report']&.order}," if session['report']
+    @fingerpint += "#{session['region']&.code}\n" if session['region']
     if payload_type == 'message' && payload['reply_to_message']
       @message = Message.find_by(chat_id: chat['id'], message_id: payload['reply_to_message']['message_id'])
     elsif payload_type == 'callback_query'

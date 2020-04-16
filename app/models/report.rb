@@ -7,9 +7,7 @@ class Report < ApplicationRecord
   end
 
   def to_s
-    "\#заказ#{order}
-    #{region}
-    #{product.each_slice(2).to_a.map { |x| x.join(': ') }.join("\n")}"
+    "\#заказ#{order}\n#{region}\n#{product.each_slice(2).to_a.map { |x| x.join(': ') }.join("\n")}"
   end
 
   def to_line
