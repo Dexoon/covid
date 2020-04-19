@@ -1,20 +1,31 @@
 # frozen_string_literal: true
 class TelegramWebhooksController < Telegram::Bot::UpdatesController
-  #include Telegram::Bot::UpdatesController::TypedUpdate
+  #include Telegram::Bot::UpdatesController::TypedUpdate #Почему-то TypedUpdate у меня не работает, поэтому выкдючил
+
+
   include Telegram::Bot::UpdatesController::MessageContext
+  #Позволяет формировать контекст у сообщений.
+  # Реализовано это через сохранение в session[:context] названия метода который будет вызван,
+  # если придёт новое сообщение. В качестве аргументов этому методу подаётся набор сов в тексте сообщения
+
+
   include Telegram::Bot::UpdatesController::CallbackQueryContext
+
   include Telegram::Bot::UpdatesController::Session
+
   before_action :set_globals, except: %i[channel_post edited_channel_post edited_message unsupported_payload_type]
 
   def clean_start
+    #Если что-то пошло не так, начать новую сессию
     session.delete(:context)
     session.delete(:report)
     start!
   end
 
   def start!(*)
-    if chat['id'] == from['id']
+    if chat['id'] == from['id'] # Если это ЛС
       if session['region']
+        #Если известно из какого региона 
         respond_with :message, text: @fingerpint + 'Что вы хотите прислать?', reply_markup: {
             keyboard: %i(report thanks region).map do |x|
               [{text: I18n.t('telegram_webhooks.reply_buttons')[x]}]
@@ -24,18 +35,19 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
       else
         region
       end
-
     else
+      # Посылает мне в канал id и название чата, в который добавили бота
       bot.send_message(chat_id: ENV['RawChannel'], text: "#{chat['id']}
       #{chat['title']}")
       respond_with :message, text: 'Чат в процессе добавления'
     end
   end
 
-  def region(code = nil,*args)
+  def region(code = nil, *args)
     if code.nil?
       respond_with :message, text: 'Введите код вашего региона'
       save_context :region
+      # Ждём ввода номера региона
     else
       session['region'] = Region.find_by(code: code)
       respond_with :message, text: "Ваш регион: #{session['region']}"
@@ -43,37 +55,44 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     end
   end
 
-  def amount(number,*args)
+  def amount(number, *args)
+    # В отчёт вводится сколько именно продукта доставили
     report = session['report']
-    if report.nil?
-      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
-      start!
-      return
-    end
+    return something_went_wrong if report.nil?
+    #Если отчёта нет в сессии, начинаем заново
+
     report.product += [number]
+    # Немного кривая архитектура. report.product это массив строк, котрый выглядит так:
+    # [Название_продукта_1, количество_продукта_1, Название_продукта_2, количество_продукта_2,...]
     report.save!
     respond_with :message, text: @fingerpint + "Прикрепите фото (видео) готовой продукции"
+    #  Все картинки/видео по умолчанию прикрепляются к текущему (укзазанному в сессии) заказу,
+    # поэтому ничего дополнительно делать не надо
   end
 
   def product(*name)
-    name = name.join(' ')
+    # В отчёт вводится название продукта
+
     report = session['report']
-    if report.nil?
-      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
-      start!
-      return
-    end
+    return something_went_wrong if report.nil?
+    #Если отчёта нет в сессии, начинаем заново
+
+    name = name.join(' ')
+    # В случае, если название продукта состоит из нескольки слов,
+    # то каждое слово - элекент массива аргументов, поэтому нужно объединять
+
     report.product += [name]
     report.save!
     respond_with :message, {text: @fingerpint + "Введите количество продукта",
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :amount
-
+    #  Ждём вводаколичества
   end
 
-  def order(number,*args)
+  def order(number, *args)
     report = Report.find_or_create_by(region: session['region'], order: number)
-    if report.save
+    #    Создаём или находим отчёт по номеру заказа и региону
+    if report
       session['report'] = report
       respond_with :message, text: @fingerpint + "Выберите доставляемый продукт", reply_markup: {
           keyboard: ['Щитки', 'Заколки', 'Боксы', 'Переходники'].map do |text|
@@ -84,9 +103,10 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
       respond_with :message, {text: @fingerpint + "В случае ошибки в номере заказа, нажмите 'Ошибка/отмена'",
                               reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
       save_context :product
+      #  Ждём ввода названия продукта
+
     else
-      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
-      start!
+      return something_went_wrong
     end
 
   end
@@ -95,19 +115,23 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     respond_with :message, {text: @fingerpint + I18n.t('telegram_webhooks.report.text'),
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :order
+    # Ждём ввода номера заказа
   end
 
-  def message(message)
-    # if message.reply_to_message && message['chat_id'] == ENV['Photo_chat'] && message.reply_to_message['photo']
-    # return bot.send_photo(chat_id: ENV['Photo_channel'],
-    #                       photo: message.reply_to_message['photo'].last['file_id'],
-    #                      caption: message['text'])
-    # end
-    # send_error(message_context_session.to_h.to_s)
+  def message(message) # Обработка водящего сообщения без контекста
+
     return photo(message) unless message['photo'].nil? && message['document'].nil?
-    buttons = I18n.t('telegram_webhooks.reply_buttons').invert
+    # Если в сообщении есть фото/видео (видео это документ), то переодим к его обработке
+    # Эта строчка уже прописана в контроллере, но я её дублирую,
+    # она у меня не всегда срабатывает почему-то
+
+    buttons = I18n.t('telegram_webhooks.reply_buttons').invert #Список прописанных кнопок
     return self.send(buttons[message['text']]) unless buttons[message['text']].nil?
+    # Если полученный текст, это название одной из кнопок, то перейти к
+    # соответствующему методу
+
     @message.reply(message['text']) if @message
+      #  Это из другой части бота
 
   rescue StandardError => msg
     send_error(msg)
@@ -117,15 +141,17 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     respond_with :message, {text: @fingerpint + I18n.t('telegram_webhooks.thanks.text'),
                             reply_markup: {inline_keyboard: [[{text: 'Ошибка/отмена', callback_data: 'cancel:'}]]}}
     save_context :doctor_photo
+    #Ждём фотографий/видео
   end
 
   def doctor_photo(*args)
-    save_context :doctor_photo unless payload['photo'].nil? && payload['document'].nil?
     reply_with :message, {text: @fingerpint + "Врач согласился на использование видео в открытых источниках?",
                           reply_markup: {inline_keyboard:
                                              I18n.t('telegram_webhooks.doctor_photo.buttons').map { |key, text|
                                                [{text: text, callback_data: "doctor:#{key}"}]
                                              }}}
+    save_context :doctor_photo unless payload['photo'].nil? && payload['document'].nil?
+    #По умолчанию ждём ещё фотографий/видео
   end
 
   def doctor_callback_query(data)
@@ -133,35 +159,43 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     answer_callback_query('')
   end
 
-  def help!(*)
-  rescue StandardError => msg
-    send_error(msg)
-  end
-
-  def forward_to_channel(message, channel = 'Photo_channel', caption = '',*args)
+  def forward_to_channel(message, channel = 'Photo_channel', caption = '', *args)
     report = session['report']
     if report.nil?
       forwarded = bot.forward_message(chat_id: 'Lost_channel',
                                       from_chat_id: message['chat']['id'],
                                       message_id: message['message_id'])
-      respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
-      start!
-      return
+      # Форвардим сообщение в канал потерянных фотографий, на всякий случай
+      return something_went_wrong
     end
     if channel == 'Doctor_channel'
-      save_context :doctor_photo
       respond_with :message, text: @fingerpint + 'Можете прислать ещё фото/видео, с благодарностью врача, необязательно нажимать на кнопки внизу'
+      save_context :doctor_photo
+      #По умолчанию ждём ещё фотографий/видео
     else
       respond_with :message, text: @fingerpint + 'Можете прислать ещё фото/видео, с отчётом, необязательно нажимать на кнопки внизу'
     end
     start!
+
     bot.send_message(chat_id: ENV[channel], text: "#{report}\n#{caption}\n#{@user}", parse_mode: 'HTML')
     forwarded = bot.forward_message(chat_id: ENV[channel],
                                     from_chat_id: message['chat']['id'],
                                     message_id: message['message_id'])
+    #Форвардим фото с комментарием в соответствующий канал
 
     report.photo += ["t.me/c/#{ENV['Photo_channel'][4..-1]}/#{forwarded['result']['message_id']}"]
     report.save
+  end
+
+  def something_went_wrong
+    respond_with :message, text: @fingerpint + "Что-то пошло не так, попробуйте заново"
+    start!
+  end
+
+
+  def cancel_callback_query(data)
+    answer_callback_query('')
+    clean_start
   end
 
   def photo(message)
@@ -171,6 +205,15 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   def document(message)
     forward_to_channel(message)
   end
+
+  #
+  #
+  #  ЗДЕСЬ НАЧИНАЕТСЯ ДРУГАЯ ЧАСТЬ БОТА, КОТОРАЯ В ИТОГЕ ОКАЗАЛАСЬ НЕВОСТРЕБОВАНА
+  #
+  #
+  #
+
+
 
   def supply
     region = Region.where(chat_id: chat['id']).order(code: :desc)[0]
@@ -190,10 +233,6 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     answer_callback_query('')
   end
 
-  def cancel_callback_query(data)
-    answer_callback_query('')
-    clean_start
-  end
 
   def approve_callback_query(data)
     @message.archmessage.confirm!
@@ -226,6 +265,11 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     answer_callback_query(t('.error'), show_alert: true)
   end
 
+
+  def help!(*)
+  rescue StandardError => msg
+    send_error(msg)
+  end
 
   private
 
